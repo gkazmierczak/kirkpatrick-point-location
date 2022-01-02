@@ -1,4 +1,3 @@
-# TODO
 from collections import defaultdict
 
 
@@ -25,7 +24,6 @@ class Graph:
     def __init__(self) -> None:
         self.edges = defaultdict(set)
         self.nodes = set()
-        # self.DFSParent = None
         self.cycleEnd = None
         self.parents = {}
 

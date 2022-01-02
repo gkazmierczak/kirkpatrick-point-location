@@ -5,40 +5,46 @@ from geometry import Point, Polygon, Triangle
 from graph import Graph, DirectedGraph
 from triangulation import triangulate
 from geometry import loadPlanarSubdivision
-import visualization
+from visualization import Visualizer
 
 
 class Kirkpatrick:
-    def __init__(self, name, stepVisualization=False) -> None:
+    def __init__(self, name=None, stepVisualization=False) -> None:
         self.directedGraph = DirectedGraph()
-        self.stepVisualization = stepVisualization
-        self.loadPolygons(name)
+        self.visualizer = Visualizer(stepVisualization)
+        if name is not None:
+            self.loadPolygons(name)
+        else:
+            self.getPolygonInput()
 
     def loadPolygons(self, name):
         self.originalPolygon, self.originalTriangles = loadPlanarSubdivision(
             name)
         self._preprocessPolygons(self.originalTriangles, self.originalPolygon)
 
-    def _preprocessPolygons(self, polygons, originalPolygon: Polygon):
+    def _preprocessPolygons(self, polygons, originalPolygon: Polygon, boundingTriangle=None):
         triangles = self.triangulateToGraph(polygons)
-        boundingTriangle = originalPolygon.getBoundingTriangle()
+        if boundingTriangle is None:
+            boundingTriangle = originalPolygon.getBoundingTriangle()
         ringTriangulation = triangulate(boundingTriangle, originalPolygon)
         for triangle in ringTriangulation:
             self.directedGraph.addNode(triangle, False)
         triangulation = triangles+ringTriangulation
-        if self.stepVisualization:
-            visualization.plotPolygons(triangulation)
-            # plt.show()
+        if self.visualizer.active:
+            self.visualizer.triangulations.append(triangulation)
+            self.visualizer.plotPolygons(triangulation)
+            # plt.savefig("triangulation0.png")
             plt.clf()
         k = 0
         while len(triangulation) > 1:
             triangulation = self.nextTriangulation(
                 triangulation, boundingTriangle)
             k += 1
-            if self.stepVisualization:
-                visualization.plotPolygons(triangulation)
-                plt.savefig("triangulation{}.png".format(k))
-                plt.clf()
+            if self.visualizer.active:
+                self.visualizer.triangulations.append(triangulation)
+                self.visualizer.plotPolygons(triangulation)
+                # plt.savefig("triangulation{}.png".format(k))
+                # plt.clf()
         self.layer = triangulation
 
     def nextTriangulation(self, prevTriangulation, boundingTriangle):
@@ -72,7 +78,6 @@ class Kirkpatrick:
 
     def removePointFromTriangulation(self, point, affectedTriangles):
         graph = Graph()
-        print("removing: ", point)
         startnode = None
         for triangle in affectedTriangles:
             affectedPoints = set(triangle.points)-{point}
@@ -110,46 +115,58 @@ class Kirkpatrick:
 
     def _locatePoint(self, point):
         node = None
+        k = 0
         for triangle in self.layer:
             if triangle.contains(point):
                 node = triangle
+                if self.visualizer.active:
+                    self.visualizer.addLocationFrame(
+                        self.layer, point, triangle)
                 break
         else:
             return None
-
+        k = 1
         nodeNeighbours = self.directedGraph.getNeighbours(node)
         while nodeNeighbours is not None:
             for triangle in nodeNeighbours:
                 if triangle.contains(point):
-                    # print(triangle)
-                    # print(self.directedGraph.getNeighbours(triangle))
                     node = triangle
+                    if self.visualizer.active and self.directedGraph.nodes[node] == False:
+                        self.visualizer.addLocationFrame(self.visualizer.triangulations[len(
+                            self.visualizer.triangulations)-k-1], point, triangle)
+                        k += 1
                     nodeNeighbours = self.directedGraph.getNeighbours(node)
                     break
             else:
                 return None
         if self.directedGraph.nodes[node]:
+            if self.visualizer.active:
+                self.visualizer.addLocationFrame(
+                    self.visualizer.triangulations[0], point, triangle)
             return node
         else:
             return None
-        # return node
-        # print(node)
-        # for p in node.points:
-        #     print(p)
 
     def locatePoint(self, point):
         node = self._locatePoint(point)
-        visualization.plotPolygons(self.originalTriangles)
-        visualization.plotPoints([point])
-        if node != None:
-            visualization.plotHighlightedPolygon(node)
-        plt.show()
+        self.visualizer.drawFinalLocation()
+
+    def getPolygonInput(self):
+        boundingTriangle = Triangle(
+            [Point(0, 0), Point(20, 0), Point(10, 17.3)])
+        self.originalPolygon = self.visualizer.getPolygonInput(
+            boundingTriangle)
+        self.originalTriangles = triangulate(self.originalPolygon)
+        self._preprocessPolygons(
+            self.originalTriangles, self.originalPolygon, boundingTriangle)
+
+    def pickLocatePoint(self):
+        self.visualizer.originalTriangles = self.originalTriangles
+        self.visualizer.originalPolygon = self.originalPolygon
+        pointToLocate = self.visualizer.getPointToLocate()
+        self.locatePoint(pointToLocate)
 
 
-locationTool = Kirkpatrick("./sample_triangulations/example3.txt", True)
-point = Point(2.8, 8.7)
-locationTool.locatePoint(point)
-# if node != None:
-#     visualization.plotPolygon(node)
-#     visualization.plotPoints([point])
-#     plt.show()
+# locationTool = Kirkpatrick("./sample_triangulations/example2.txt", True)
+# locationTool = Kirkpatrick(stepVisualization=True)
+# locationTool.pickLocatePoint()
