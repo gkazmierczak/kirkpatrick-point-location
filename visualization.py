@@ -51,9 +51,13 @@ class Visualizer:
         for polygon in polygons:
             self.plotPolygon(polygon)
 
+    def _handleClose(self, event):
+        plt.close('all')
+        exit(0)
+
     def getPolygonInput(self, boundingTriangle):
         plt.close()
-        plt.figure(figsize=(10, 10))
+        fig = plt.figure(figsize=(10, 10))
         self._axPlot = plt.axes((0.05, 0.2, 0.9, 0.7))
         self._axPlot.set_xlim(0, 20)
         self._axPlot.set_ylim(0, 18)
@@ -130,7 +134,8 @@ class Visualizer:
     def getPointToLocate(self):
         # plt.close()
         plt.close()
-        plt.figure(figsize=(10, 10))
+        fig = plt.figure(figsize=(10, 10))
+        cid = fig.canvas.mpl_connect('close_event', self._handleClose)
         self._axPlot = plt.axes((0.05, 0.2, 0.9, 0.7))
         self._axPlot.set_xlim(0, 20)
         self._axPlot.set_ylim(0, 18)
@@ -156,6 +161,7 @@ class Visualizer:
         # plt.ion()
         pointData = plt.ginput(1)
         # plt.show()
+        fig.canvas.mpl_disconnect(cid)
         pointData = pointData[0]
         point = Point(pointData[0], pointData[1])
         self._axPlot.scatter(point.x, point.y, color="red")
