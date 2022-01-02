@@ -35,11 +35,11 @@ class Kirkpatrick:
             self.visualizer.plotPolygons(triangulation)
             # plt.savefig("triangulation0.png")
             plt.clf()
-        k = 0
+        self.currentLayer = 0
         while len(triangulation) > 1:
             triangulation = self.nextTriangulation(
                 triangulation, boundingTriangle)
-            k += 1
+            self.currentLayer += 1
             if self.visualizer.active:
                 self.visualizer.triangulations.append(triangulation)
                 self.visualizer.plotPolygons(triangulation)
@@ -72,7 +72,7 @@ class Kirkpatrick:
                 for i in affectedTriangles:
                     self.directedGraph.addNode(triangle, False)
                     self.directedGraph.addEdge(
-                        triangle, prevTriangulation[i])
+                        triangle, prevTriangulation[i], self.currentLayer)
         newTriangulation += [prevTriangulation[i] for i in unaffectedTriangles]
         return newTriangulation
 
@@ -110,7 +110,8 @@ class Kirkpatrick:
                 for triangle in triangulate(polygon):
                     triangles.append(triangle)
                     self.directedGraph.addNode(triangle, False)
-                    self.directedGraph.addEdge(triangle, polygon)
+                    self.directedGraph.addEdge(
+                        triangle, polygon, self.currentLayer)
         return triangles
 
     def _locatePoint(self, point):
@@ -128,12 +129,12 @@ class Kirkpatrick:
         k = 1
         nodeNeighbours = self.directedGraph.getNeighbours(node)
         while nodeNeighbours is not None:
-            for triangle in nodeNeighbours:
+            for (triangle, layerIndex) in nodeNeighbours:
                 if triangle.contains(point):
                     node = triangle
                     if self.visualizer.active and self.directedGraph.nodes[node] == False:
-                        self.visualizer.addLocationFrame(self.visualizer.triangulations[len(
-                            self.visualizer.triangulations)-k-1], point, triangle)
+                        self.visualizer.addLocationFrame(
+                            self.visualizer.triangulations[layerIndex], point, triangle)
                         k += 1
                     nodeNeighbours = self.directedGraph.getNeighbours(node)
                     break
