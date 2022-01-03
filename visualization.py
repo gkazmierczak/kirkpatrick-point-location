@@ -91,6 +91,22 @@ class Visualizer:
         self.originalPolygon = self.originalPolygon.fixOrient()
         return self.originalPolygon
 
+    # def awaitNextStep(self, originalPolygon, boundingTriangle, eventHandler):
+    #     plt.close()
+    #     plt.figure(figsize=(10, 10))
+    #     self._axPlot = plt.axes((0.05, 0.2, 0.9, 0.7))
+    #     ax_prev = plt.axes((0.2, 0.03, 0.2, 0.09))
+    #     ax_next = plt.axes((0.6, 0.03, 0.2, 0.09))
+    #     triangulateBtn = Button(ax_prev, 'TRIANGULATE',
+    #                      color='silver', hovercolor='slategrey')
+    #     splitBtn = Button(ax_next, 'splitBtn', color='silver',
+    #                      hovercolor='slategrey')
+    #     triangulateBtn.on_clicked(lambda e: eventHandler("TRIANGULATE"))
+    #     nextBtn.on_clicked(self.next)
+    #     # plt.ion()
+    #     self._draw()
+    #     plt.show()
+
     def _draw(self):
         self._axPlot.clear()
         scene = self._scenes[self.index]

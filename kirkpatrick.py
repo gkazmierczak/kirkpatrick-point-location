@@ -23,6 +23,7 @@ class Kirkpatrick:
         self._preprocessPolygons(self.originalTriangles, self.originalPolygon)
 
     def _preprocessPolygons(self, polygons, originalPolygon: Polygon, boundingTriangle=None):
+        self.currentLayer = 0
         triangles = self.triangulateToGraph(polygons)
         if boundingTriangle is None:
             boundingTriangle = originalPolygon.getBoundingTriangle()
@@ -35,7 +36,6 @@ class Kirkpatrick:
             self.visualizer.plotPolygons(triangulation)
             # plt.savefig("triangulation0.png")
             plt.clf()
-        self.currentLayer = 0
         while len(triangulation) > 1:
             triangulation = self.nextTriangulation(
                 triangulation, boundingTriangle)
@@ -115,6 +115,7 @@ class Kirkpatrick:
         return triangles
 
     def _locatePoint(self, point):
+        # print(self.directedGraph.nodes)
         node = None
         k = 0
         for triangle in self.layer:
@@ -130,7 +131,15 @@ class Kirkpatrick:
         nodeNeighbours = self.directedGraph.getNeighbours(node)
         while nodeNeighbours is not None:
             for (triangle, layerIndex) in nodeNeighbours:
-                if triangle.contains(point):
+                if isinstance(triangle, Triangle) and triangle.contains(point):
+                    node = triangle
+                    if self.visualizer.active and self.directedGraph.nodes[node] == False:
+                        self.visualizer.addLocationFrame(
+                            self.visualizer.triangulations[layerIndex], point, triangle)
+                        k += 1
+                    nodeNeighbours = self.directedGraph.getNeighbours(node)
+                    break
+                elif not isinstance(triangle, Triangle):
                     node = triangle
                     if self.visualizer.active and self.directedGraph.nodes[node] == False:
                         self.visualizer.addLocationFrame(

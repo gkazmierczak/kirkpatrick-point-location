@@ -145,11 +145,16 @@ def loadPlanarSubdivision(file):
             points.append(Point(float(coords[0][1:]), float(coords[1][:-2])))
         line = f.readline()
         while line:
-            trianglePointIndexes = eval(line)
-            a = points[trianglePointIndexes[0]]
-            b = points[trianglePointIndexes[1]]
-            c = points[trianglePointIndexes[2]]
-            triangles.append(Triangle([a, b, c]))
+            pointIndexes = eval(line)
+            selectedPoints = []
+            for i in pointIndexes:
+                selectedPoints.append(points[i])
+            if len(selectedPoints) == 3:
+                triangles.append(Triangle(selectedPoints))
+            else:
+                polygon = Polygon(selectedPoints)
+                triangles.append(polygon.fixOrient())
+            # triangles.append(Triangle([a, b, c]))
             line = f.readline()
     originalPolygon = Polygon(points)
     return originalPolygon, triangles
