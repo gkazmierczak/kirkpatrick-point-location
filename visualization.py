@@ -93,6 +93,9 @@ class Visualizer:
                 xs = [p.x for p in points]
                 ys = [p.y for p in points]
                 self._axPlot.fill(xs, ys, color="white")
+        if 'time' in scene:
+            self._axPlot.set_title(
+                "N = "+str(self.originalPolygon.size)+"   Location time: "+str(scene['time']))
         points = self.originalPolygon.points+[self.originalPolygon.points[0]]
         xs = [p.x for p in points]
         ys = [p.y for p in points]
@@ -141,12 +144,14 @@ class Visualizer:
         self._axPlot.scatter(point.x, point.y, color="red")
         return point
 
-    def addLocationFrame(self, polygons, point, highlight):
+    def addLocationFrame(self, polygons, point, highlight, time=None):
         self._scenes.append({
             'polygons': polygons,
             'point': point,
             'highlight': highlight
         })
+        if time != None:
+            self._scenes[-1]['time'] = time
 
     def drawFinalLocation(self):
         self.index = len(self._scenes)-1

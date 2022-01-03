@@ -6,6 +6,7 @@ from graph import Graph, DirectedGraph
 from triangulation import triangulate
 from geometry import loadPlanarSubdivision
 from visualization import Visualizer
+from time import time
 
 
 class Kirkpatrick:
@@ -131,6 +132,7 @@ class Kirkpatrick:
         return triangles
 
     def _locatePoint(self, point):
+        start = time()
         node = None
         k = 0
         for triangle in self.layer:
@@ -165,11 +167,12 @@ class Kirkpatrick:
             else:
                 return None
         if self.directedGraph.nodes[node]:
+            totalTime = time()-start
             if self.visualizer.active:
                 self.visualizer.addLocationFrame(
                     self.visualizer.triangulations[2], point, triangle)
             self.visualizer.addLocationFrame(
-                self.visualizer.originalTriangles, point, node)
+                self.visualizer.originalTriangles, point, node, time=totalTime)
             return node
         else:
             return None
