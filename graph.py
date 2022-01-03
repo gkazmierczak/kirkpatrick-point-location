@@ -10,8 +10,8 @@ class DirectedGraph:
     def addNode(self, node, isOriginalPolygon):
         self.nodes[node] = isOriginalPolygon
 
-    def addEdge(self, node, relative, layerIndex):
-        self.adjacency[node].add((relative, layerIndex))
+    def addEdge(self, node, relative, ):
+        self.adjacency[node].add(relative)
 
     def getNeighbours(self, node):
         if node in self.nodes and self.adjacency[node] != set():
