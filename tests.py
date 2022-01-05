@@ -4,8 +4,6 @@ from numpy.lib import utils
 from geometry import Point, Polygon, Segment, Triangle
 from triangulation import triangulate
 from scipy.spatial import Delaunay
-from utils import intersect, pointCCW
-
 
 T = [1, 10, 20, 30, 40, 50, 60, 70]
 R = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]

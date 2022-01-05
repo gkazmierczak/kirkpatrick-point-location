@@ -1,14 +1,7 @@
 from matplotlib import pyplot as plt
-from geometry import Point, Polygon, Triangle
+from geometry import Point, Polygon
 from matplotlib.widgets import Button
-
-from utils import distance
-
-
-class Scene:
-    def __init__(self, points=[], polygons=[]):
-        self.points = points
-        self.polygons = polygons
+from geometry import distance
 
 
 class Visualizer:
@@ -18,8 +11,6 @@ class Visualizer:
         self.triangulations = []
         self.pointData = None
         self.index = 0
-        self._inputScene = Scene([], [Triangle(
-            [Point(0, 0), Point(20, 0), Point(10, 17.3)])])
         self.originalPolygon = None
         self.originalTriangles = []
         self.boundingTriangle = None
@@ -37,7 +28,6 @@ class Visualizer:
         self._axPlot.set_ylim(0, 18)
         self._axPlot.clear()
         self._axPlot.set_title("Waiting for polygon input")
-
         points = boundingTriangle.points+[boundingTriangle.points[0]]
         xs = [p.x for p in points]
         ys = [p.y for p in points]
@@ -64,7 +54,7 @@ class Visualizer:
         self.originalPolygon = self.originalPolygon.fixOrient()
         return self.originalPolygon
 
-    def _draw(self):
+    def _drawScene(self):
         self._axPlot.clear()
         scene = self._scenes[self.index]
         if 'polygons' in scene:
@@ -107,7 +97,7 @@ class Visualizer:
         self._axPlot.plot(xs, ys, "red", zorder=2)
         plt.draw()
 
-    def draw(self):
+    def _draw(self):
         plt.close()
         plt.figure(figsize=(10, 10))
         self._axPlot = plt.axes((0.05, 0.2, 0.9, 0.7))
@@ -117,12 +107,12 @@ class Visualizer:
                          color='silver', hovercolor='slategrey')
         nextBtn = Button(ax_next, 'NEXT', color='silver',
                          hovercolor='slategrey')
-        prevBtn.on_clicked(self.prev)
-        nextBtn.on_clicked(self.next)
-        self._draw()
+        prevBtn.on_clicked(self._prev)
+        nextBtn.on_clicked(self._next)
+        self._drawScene()
         plt.show()
 
-    def getPointToLocate(self):
+    def _getPointToLocate(self):
         plt.close()
         fig = plt.figure(figsize=(10, 10))
         cid = fig.canvas.mpl_connect('close_event', self._handleClose)
@@ -143,7 +133,6 @@ class Visualizer:
         self._axPlot.plot(xs, ys, color="green")
         plt.draw()
         pointData = plt.ginput(1)
-
         fig.canvas.mpl_disconnect(cid)
         pointData = pointData[0]
         point = Point(pointData[0], pointData[1])
@@ -153,7 +142,7 @@ class Visualizer:
         self._axPlot.scatter(point.x, point.y, color="red")
         return point
 
-    def addLocationFrame(self, polygons, point, highlight, time=None):
+    def _addLocationFrame(self, polygons, point, highlight, time=None):
         self._scenes.append({
             'polygons': polygons,
             'point': point,
@@ -162,28 +151,28 @@ class Visualizer:
         if time != None:
             self._scenes[-1]['time'] = time
 
-    def drawFinalLocation(self):
+    def _drawFinalLocation(self):
         self.index = len(self._scenes)-1
-        self.draw()
+        self._draw()
 
-    def next(self, event):
+    def _next(self, event):
         self.index = (self.index+1) % len(self._scenes)
-        self._draw()
+        self._drawScene()
         pass
 
-    def prev(self, event):
+    def _prev(self, event):
         self.index = (self.index-1) % len(self._scenes)
-        self._draw()
+        self._drawScene()
         pass
 
-    def addTriangulation(self, triangulation, activePoints):
+    def _addTriangulation(self, triangulation, activePoints):
         self.triangulations.append(triangulation)
         self._scenes.append({
             'polygons': triangulation,
             'activePoints': activePoints,
         })
 
-    def addIndependentSetFrame(self, triangulation, independentSet, activePoints):
+    def _addIndependentSetFrame(self, triangulation, independentSet, activePoints):
         self.triangulations.append(triangulation)
         self._scenes.append({
             'polygons': triangulation,
@@ -191,10 +180,10 @@ class Visualizer:
             'activePoints': activePoints
         })
 
-    def locationFailure(self, point):
+    def _locationFailure(self, point):
         self._scenes.append({
             'input': self.originalTriangles,
             'point': point,
             'bg': True
         })
-        self.draw()
+        self._draw()

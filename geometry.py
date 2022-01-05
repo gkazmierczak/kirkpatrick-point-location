@@ -1,6 +1,5 @@
 from typing import List, Tuple
 import numpy as np
-import utils
 
 
 class Point:
@@ -12,7 +11,9 @@ class Point:
         return hash((self.x, self.y))
 
     def __eq__(self, other):
-        return self.x == other.x and self.y == other.y
+        if isinstance(other, Point):
+            return self.x == other.x and self.y == other.y
+        return False
 
     def __str__(self) -> str:
         return "("+str(self.x)+" , "+str(self.y)+")"
@@ -33,12 +34,12 @@ class Polygon:
         self.size = len(points)
         self.segments = [Segment(points[i-1], points[i])
                          for i in range(self.size)]
-        self.reflexVertices = self.getReflexVertices()
+        self.reflexVertices = self._getReflexVertices()
 
-    def getReflexVertices(self):
+    def _getReflexVertices(self):
         potentialEars = [[i-1, i, i+1]
                          for i in range(1, self.size-1)]+[[self.size-2, self.size-1, 0], [self.size-1, 0, 1]]
-        reflexVertices = [ear[1] for ear in potentialEars if utils.pointCCW(
+        reflexVertices = [ear[1] for ear in potentialEars if pointCCW(
             self.points[ear[0]], self.points[ear[1]], self.points[ear[2]]) == -1]
         return reflexVertices
 
@@ -56,7 +57,7 @@ class Polygon:
     def isEar(self, ear) -> bool:
         pts = np.array(self.points)
         ear = list(ear)
-        if utils.pointCCW(*pts[ear]) != 1:
+        if pointCCW(*pts[ear]) != 1:
             return False
         if self._pointIntersect(Triangle([self.points[ear[0]], self.points[ear[1]], self.points[ear[2]]])):
             return False
@@ -78,9 +79,6 @@ class Polygon:
     def getBoundingTriangle(self):
         return Triangle.boundingTriangle(self.getLowerLeft(), self.getUpperRight())
 
-    def segmentIntersect(self, segment):
-        return any(utils.intersect(segment, edge, closed=False) for edge in self.segments)
-
     def _pointIntersect(self, triangle):
         return any(triangle.contains(p) for p in self.points if p not in triangle.points)
 
@@ -101,9 +99,9 @@ class Triangle(Polygon):
         super().__init__(points)
 
     def contains(self, point, closed=True):
-        ccw01 = utils.pointCCW(point, self.points[0], self.points[1])
-        ccw12 = utils.pointCCW(point, self.points[1], self.points[2])
-        ccw20 = utils.pointCCW(point, self.points[2], self.points[0])
+        ccw01 = pointCCW(point, self.points[0], self.points[1])
+        ccw12 = pointCCW(point, self.points[1], self.points[2])
+        ccw20 = pointCCW(point, self.points[2], self.points[0])
         neg = (-1 in [ccw01, ccw12, ccw20])
         pos = (1 in [ccw01, ccw12, ccw20])
         if closed:
@@ -138,7 +136,7 @@ def loadPolygon(file):
 
 def loadPlanarSubdivision(file):
     points = []
-    triangles = []
+    polygons = []
     with open(file, 'r') as f:
         pointCount = int(f.readline())
         for _ in range(pointCount):
@@ -151,10 +149,34 @@ def loadPlanarSubdivision(file):
             for i in pointIndexes:
                 selectedPoints.append(points[i])
             if len(selectedPoints) == 3:
-                triangles.append(Triangle(selectedPoints))
+                polygons.append(Triangle(selectedPoints))
             else:
                 polygon = Polygon(selectedPoints)
-                triangles.append(polygon.fixOrient())
+                polygons.append(polygon.fixOrient())
             line = f.readline()
-    originalPolygon = triangles[0].fixOrient()
-    return originalPolygon, triangles[1:]
+    originalPolygon = polygons[0].fixOrient()
+    return originalPolygon, polygons[1:]
+
+
+def pointCCW(a, b, c) -> int:
+    '''
+    abc is counter-clockwise:
+        return 1
+    abc is clockwise:
+        return -1
+    abc are collinear:
+        return 0
+    '''
+    d = (a.x*b.y)+(b.x*c.y)+(c.x*a.y) - \
+        (c.x*b.y)-(b.x*a.y)-(a.x*c.y)
+    e = 10**-12
+    if d < -e:
+        return -1
+    elif d < e:
+        return 0
+    else:
+        return 1
+
+
+def distance(a, b):
+    return ((b.x-a.x)**2+(b.y-a.y)**2)**(1/2)

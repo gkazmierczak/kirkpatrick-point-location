@@ -1,5 +1,4 @@
 from collections import defaultdict
-from matplotlib import pyplot as plt
 import numpy as np
 from geometry import Point, Polygon, Triangle
 from graph import Graph, DirectedGraph
@@ -10,52 +9,51 @@ from time import time
 
 
 class Kirkpatrick:
-    def __init__(self, name=None, stepVisualization=False) -> None:
-        self.directedGraph = DirectedGraph()
-        self.visualizer = Visualizer(stepVisualization)
-        if name is not None:
-            self.loadPolygons(name)
+    def __init__(self, filepath=None, stepVisualization=False) -> None:
+        self._directedGraph = DirectedGraph()
+        self._visualizer = Visualizer(stepVisualization)
+        if filepath is not None:
+            self._loadPolygons(filepath)
         else:
-            self.getPolygonInput()
+            self._getPolygonInput()
 
-    def loadPolygons(self, name):
+    def _loadPolygons(self, filepath):
         self.originalPolygon, self.originalTriangles = loadPlanarSubdivision(
-            name)
+            filepath)
         self._preprocessPolygons(self.originalTriangles, self.originalPolygon)
 
     def _preprocessPolygons(self, polygons, originalPolygon: Polygon, boundingTriangle=None):
         self.activePoints = set()
-        triangles = self.triangulateToGraph(polygons)
+        triangles = self._triangulateToGraph(polygons)
         if boundingTriangle is None:
             boundingTriangle = originalPolygon.getBoundingTriangle()
-            self.visualizer.boundingTriangle = boundingTriangle
-        if self.visualizer.active:
+            self._visualizer.boundingTriangle = boundingTriangle
+        if self._visualizer.active:
             for polygon in polygons:
                 for point in polygon.points:
                     self.activePoints.add(point)
-            self.visualizer.addTriangulation(
+            self._visualizer._addTriangulation(
                 self.originalTriangles, self.activePoints.copy())
-            self.visualizer.addTriangulation(
+            self._visualizer._addTriangulation(
                 triangles, self.activePoints.copy())
-            self.visualizer.addTriangulation(
+            self._visualizer._addTriangulation(
                 triangles+[boundingTriangle], self.activePoints.copy())
         ringTriangulation = triangulate(boundingTriangle, originalPolygon)
         for triangle in ringTriangulation:
-            self.directedGraph.addNode(triangle, False)
+            self._directedGraph.addNode(triangle, False)
         triangulation = triangles+ringTriangulation
-        if self.visualizer.active:
-            self.visualizer.addTriangulation(
+        if self._visualizer.active:
+            self._visualizer._addTriangulation(
                 triangulation, self.activePoints.copy())
-            plt.clf()
         while len(triangulation) > 1:
-            triangulation = self.nextTriangulation(
+            triangulation = self._nextTriangulation(
                 triangulation, boundingTriangle)
-            if self.visualizer.active:
-                self.visualizer.addTriangulation(
+            if self._visualizer.active:
+                self._visualizer._addTriangulation(
                     triangulation, self.activePoints.copy())
         self.layer = triangulation
 
-    def nextTriangulation(self, prevTriangulation, boundingTriangle):
+    def _nextTriangulation(self, prevTriangulation, boundingTriangle):
         pointPolygonMap = defaultdict(set)
         for i, triangle in enumerate(prevTriangulation):
             for point in triangle.points:
@@ -67,9 +65,9 @@ class Kirkpatrick:
                 graph.addNode(v)
                 graph.addEdge(u, v)
         independentSet = graph.findIndependentSet(boundingTriangle.points)
-        if self.visualizer.active:
+        if self._visualizer.active:
             self.activePoints -= independentSet
-            self.visualizer.addIndependentSetFrame(
+            self._visualizer._addIndependentSetFrame(
                 prevTriangulation, independentSet, self.activePoints.copy())
         holes = []
         unaffectedTriangles = set(range(len(prevTriangulation)))
@@ -77,27 +75,24 @@ class Kirkpatrick:
         for point in independentSet:
             affectedTriangles = pointPolygonMap[point]
             unaffectedTriangles -= affectedTriangles
-            newPolygon = self.removePointFromTriangulation(
+            newPolygon = self._removePointFromTriangulation(
                 point, [prevTriangulation[i] for i in affectedTriangles])
-            # print("eeeeo", point)
-            # for p in newPolygon.points:
-            # print(p)
             holes.append(newPolygon)
             newTriangles = triangulate(newPolygon)
             newTriangulation += newTriangles
             for triangle in newTriangles:
                 for i in affectedTriangles:
-                    self.directedGraph.addNode(triangle, False)
-                    self.directedGraph.addEdge(
+                    self._directedGraph.addNode(triangle, False)
+                    self._directedGraph.addEdge(
                         triangle, prevTriangulation[i])
         newTriangulation += [prevTriangulation[i] for i in unaffectedTriangles]
-        if self.visualizer.active:
+        if self._visualizer.active:
             if len(unaffectedTriangles) > 0 or len(holes) > 1:
-                self.visualizer.addTriangulation(
+                self._visualizer._addTriangulation(
                     [prevTriangulation[i] for i in unaffectedTriangles]+holes, self.activePoints.copy())
         return newTriangulation
 
-    def removePointFromTriangulation(self, point, affectedTriangles):
+    def _removePointFromTriangulation(self, point, affectedTriangles):
         graph = Graph()
         startnode = None
         for triangle in affectedTriangles:
@@ -109,29 +104,29 @@ class Kirkpatrick:
             graph.addNode(u)
             graph.addNode(v)
             graph.addEdge(u, v)
-        cycleEnd = graph.findCycle(startnode)
-        node = graph.parents[cycleEnd]
+        cycleEnd = graph._findCycle(startnode)
+        node = graph._parents[cycleEnd]
         points = []
         while node is not None:
             points.append(node)
-            node = graph.parents.get(node, None)
+            node = graph._parents.get(node, None)
         points.append(cycleEnd)
         newPolygon = Polygon(points)
         newPolygon = newPolygon.fixOrient()
         return newPolygon
 
-    def triangulateToGraph(self, polygons):
+    def _triangulateToGraph(self, polygons):
         triangles = []
         for polygon in polygons:
-            self.directedGraph.addNode(polygon, True)
+            self._directedGraph.addNode(polygon, True)
             if polygon.size == 3:
                 polygon.__class__ = Triangle
                 triangles.append(polygon)
             else:
                 for triangle in triangulate(polygon):
                     triangles.append(triangle)
-                    self.directedGraph.addNode(triangle, False)
-                    self.directedGraph.addEdge(
+                    self._directedGraph.addNode(triangle, False)
+                    self._directedGraph.addEdge(
                         triangle, polygon)
         return triangles
 
@@ -142,41 +137,41 @@ class Kirkpatrick:
         for triangle in self.layer:
             if triangle.contains(point):
                 node = triangle
-                if self.visualizer.active:
-                    self.visualizer.addLocationFrame(
+                if self._visualizer.active:
+                    self._visualizer._addLocationFrame(
                         self.layer, point, triangle)
                 break
         else:
             return None
         k = 1
-        nodeNeighbours = self.directedGraph.getNeighbours(node)
+        nodeNeighbours = self._directedGraph.getNeighbours(node)
         while nodeNeighbours is not None:
             for triangle in nodeNeighbours:
                 if isinstance(triangle, Triangle) and triangle.contains(point):
                     node = triangle
-                    if self.visualizer.active and self.directedGraph.nodes[node] == False:
-                        self.visualizer.addLocationFrame(
-                            [t for t in self.visualizer.triangulations if node in t][0], point, triangle)
+                    if self._visualizer.active and self._directedGraph.nodes[node] == False:
+                        self._visualizer._addLocationFrame(
+                            [t for t in self._visualizer.triangulations if node in t][0], point, triangle)
                         k += 1
-                    nodeNeighbours = self.directedGraph.getNeighbours(node)
+                    nodeNeighbours = self._directedGraph.getNeighbours(node)
                     break
                 elif not isinstance(triangle, Triangle):
                     node = triangle
-                    if self.visualizer.active and self.directedGraph.nodes[node] == False:
-                        self.visualizer.addLocationFrame(
-                            [t for t in self.visualizer.triangulations if node in t][0], point, triangle)
+                    if self._visualizer.active and self._directedGraph.nodes[node] == False:
+                        self._visualizer._addLocationFrame(
+                            [t for t in self._visualizer.triangulations if node in t][0], point, triangle)
                         k += 1
-                    nodeNeighbours = self.directedGraph.getNeighbours(node)
+                    nodeNeighbours = self._directedGraph.getNeighbours(node)
                     break
             else:
                 return None
-        if self.directedGraph.nodes[node]:
+        if self._directedGraph.nodes[node]:
             totalTime = time()-start
-            if self.visualizer.active:
-                self.visualizer.addLocationFrame(
-                    self.visualizer.triangulations[2], point, triangle)
-            self.visualizer.addLocationFrame(
-                self.visualizer.originalTriangles, point, node, time=totalTime)
+            if self._visualizer.active:
+                self._visualizer._addLocationFrame(
+                    self._visualizer.triangulations[2], point, triangle)
+            self._visualizer._addLocationFrame(
+                self._visualizer.originalTriangles, point, node, time=totalTime)
             return node
         else:
             return None
@@ -184,22 +179,22 @@ class Kirkpatrick:
     def locatePoint(self, point):
         node = self._locatePoint(point)
         if node != None:
-            self.visualizer.drawFinalLocation()
+            self._visualizer._drawFinalLocation()
         else:
-            self.visualizer.locationFailure(point)
+            self._visualizer._locationFailure(point)
         return node
 
-    def getPolygonInput(self):
+    def _getPolygonInput(self):
         boundingTriangle = Triangle(
             [Point(0, 0), Point(20, 0), Point(10, 17.3)])
-        self.originalPolygon = self.visualizer.getPolygonInput(
+        self.originalPolygon = self._visualizer.getPolygonInput(
             boundingTriangle)
         self.originalTriangles = triangulate(self.originalPolygon)
         self._preprocessPolygons(
             self.originalTriangles, self.originalPolygon, boundingTriangle)
 
     def pickLocatePoint(self):
-        self.visualizer.originalTriangles = self.originalTriangles
-        self.visualizer.originalPolygon = self.originalPolygon
-        pointToLocate = self.visualizer.getPointToLocate()
-        self.locatePoint(pointToLocate)
+        self._visualizer.originalTriangles = self.originalTriangles
+        self._visualizer.originalPolygon = self.originalPolygon
+        pointToLocate = self._visualizer._getPointToLocate()
+        return self.locatePoint(pointToLocate)

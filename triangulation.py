@@ -1,18 +1,11 @@
 import numpy as np
 from itertools import product
-from matplotlib import pyplot as plt
-from geometry import Point, Polygon, Segment, Triangle, loadPolygon
-import visualization
-import utils
-
-
-def _segment_intersect(segment, polygon):
-    return any(utils.intersect(segment, edge) for edge in polygon.segments)
+from geometry import Polygon, Triangle, distance
 
 
 def _bridgeHole(polygon, hole):
     possibleBridges = list(product(polygon.points, hole.points))
-    possibleBridges.sort(key=lambda b: utils.distance(*b))
+    possibleBridges.sort(key=lambda b: distance(*b))
     bridge = None
     bridge = possibleBridges[0]
     polygonPoint = bridge[0]
