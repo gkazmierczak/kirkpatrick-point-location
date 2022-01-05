@@ -22,19 +22,21 @@ class Visualizer:
             [Point(0, 0), Point(20, 0), Point(10, 17.3)])])
         self.originalPolygon = None
         self.originalTriangles = []
+        self.boundingTriangle = None
 
     def _handleClose(self, event):
         plt.close('all')
         exit(0)
 
     def getPolygonInput(self, boundingTriangle):
+        self.boundingTriangle = boundingTriangle
         plt.close()
         fig = plt.figure(figsize=(10, 10))
         self._axPlot = plt.axes((0.05, 0.2, 0.9, 0.7))
         self._axPlot.set_xlim(0, 20)
         self._axPlot.set_ylim(0, 18)
         self._axPlot.clear()
-        self._axPlot.text(7.5, -4, "Waiting for polygon input")
+        self._axPlot.set_title("Waiting for polygon input")
 
         points = boundingTriangle.points+[boundingTriangle.points[0]]
         xs = [p.x for p in points]
@@ -45,6 +47,9 @@ class Visualizer:
         while addingPoints:
             pointData = plt.ginput(1)[0]
             point = Point(pointData[0], pointData[1])
+            while not boundingTriangle.contains(point):
+                pointData = plt.ginput(1)[0]
+                point = Point(pointData[0], pointData[1])
             polygonPoints.append(point)
             if len(polygonPoints) > 1:
                 self._axPlot.plot([polygonPoints[-2].x, point.x],
@@ -125,7 +130,7 @@ class Visualizer:
         self._axPlot.set_xlim(0, 20)
         self._axPlot.set_ylim(0, 18)
         self._axPlot.clear()
-        self._axPlot.text(7.5, -4, "Choose a point")
+        self._axPlot.set_title("Choose a point")
         for triangle in self.originalTriangles:
             points = triangle.points+[triangle.points[0]]
             xs = [p.x for p in points]
@@ -138,9 +143,13 @@ class Visualizer:
         self._axPlot.plot(xs, ys, color="green")
         plt.draw()
         pointData = plt.ginput(1)
+
         fig.canvas.mpl_disconnect(cid)
         pointData = pointData[0]
         point = Point(pointData[0], pointData[1])
+        while not self.boundingTriangle.contains(point):
+            pointData = plt.ginput(1)[0]
+            point = Point(pointData[0], pointData[1])
         self._axPlot.scatter(point.x, point.y, color="red")
         return point
 

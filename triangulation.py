@@ -14,13 +14,7 @@ def _bridgeHole(polygon, hole):
     possibleBridges = list(product(polygon.points, hole.points))
     possibleBridges.sort(key=lambda b: utils.distance(*b))
     bridge = None
-    for possibleBridge in possibleBridges:
-        if _segment_intersect(Segment(possibleBridge[0], possibleBridge[1]), polygon) or _segment_intersect(Segment(possibleBridge[0], possibleBridge[1]), hole):
-            continue
-        bridge = possibleBridge
-        break
-    if bridge == None:
-        bridge = possibleBridges[0]
+    bridge = possibleBridges[0]
     polygonPoint = bridge[0]
     holePoint = bridge[1]
     polygonIndex = polygon.points.index(polygonPoint)
@@ -53,20 +47,10 @@ def triangulate(polygon, hole=None):
             ears[a] = list(ear_a)
         else:
             ears.pop(a, None)
-
         if polygon.isEar(ear_c):
             ears[c] = list(ear_c)
         else:
             ears.pop(c, None)
-
         curr_n -= 1
 
     return triangles
-
-
-# polygon = loadPolygon("./sample_triangulations/example2.txt")
-# tri = Triangle.boundingTriangle(
-#     polygon.getLowerLeft(), polygon.getUpperRight())
-# visualization.plotPolygons(triangulate(tri, polygon))
-# # visualization.plotPolygons(triangulate(polygon))
-# plt.show()

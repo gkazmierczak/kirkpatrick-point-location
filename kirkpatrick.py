@@ -28,6 +28,7 @@ class Kirkpatrick:
         triangles = self.triangulateToGraph(polygons)
         if boundingTriangle is None:
             boundingTriangle = originalPolygon.getBoundingTriangle()
+            self.visualizer.boundingTriangle = boundingTriangle
         if self.visualizer.active:
             for polygon in polygons:
                 for point in polygon.points:
@@ -78,6 +79,9 @@ class Kirkpatrick:
             unaffectedTriangles -= affectedTriangles
             newPolygon = self.removePointFromTriangulation(
                 point, [prevTriangulation[i] for i in affectedTriangles])
+            # print("eeeeo", point)
+            # for p in newPolygon.points:
+            # print(p)
             holes.append(newPolygon)
             newTriangles = triangulate(newPolygon)
             newTriangulation += newTriangles

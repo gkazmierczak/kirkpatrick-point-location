@@ -58,7 +58,7 @@ class Polygon:
         ear = list(ear)
         if utils.pointCCW(*pts[ear]) != 1:
             return False
-        if self.segmentIntersect(Segment(self.points[ear[0]], self.points[ear[2]])):
+        if self._pointIntersect(Triangle([self.points[ear[0]], self.points[ear[1]], self.points[ear[2]]])):
             return False
         closure = Triangle(pts[ear])
         if any(closure.contains(self.points[v], closed=False) for v in self.reflexVertices):
@@ -81,15 +81,14 @@ class Polygon:
     def segmentIntersect(self, segment):
         return any(utils.intersect(segment, edge, closed=False) for edge in self.segments)
 
+    def _pointIntersect(self, triangle):
+        return any(triangle.contains(p) for p in self.points if p not in triangle.points)
+
     def getEars(self):
         ears = []
         for i in range(self.size):
             ear = [(i-1) % self.size, i, (i+1) % self.size]
-            if utils.pointCCW(self.points[ear[0]], self.points[ear[1]], self.points[ear[2]]) == 1 and not self.segmentIntersect(Segment(self.points[ear[0]], self.points[ear[2]])):
-                triangle = Triangle([
-                    self.points[ear[0]], self.points[ear[1]], self.points[ear[2]]])
-                if any(triangle.contains(self.points[vertex], False) for vertex in self.reflexVertices):
-                    continue
+            if self.isEar(ear):
                 ears.append(ear)
         return ears
 
@@ -102,11 +101,13 @@ class Triangle(Polygon):
         super().__init__(points)
 
     def contains(self, point, closed=True):
-        ccw01 = utils.pointCCW(self.points[0], self.points[1], point)
-        ccw12 = utils.pointCCW(self.points[1], self.points[2], point)
-        ccw20 = utils.pointCCW(self.points[2], self.points[0], point)
+        ccw01 = utils.pointCCW(point, self.points[0], self.points[1])
+        ccw12 = utils.pointCCW(point, self.points[1], self.points[2])
+        ccw20 = utils.pointCCW(point, self.points[2], self.points[0])
+        neg = (-1 in [ccw01, ccw12, ccw20])
+        pos = (1 in [ccw01, ccw12, ccw20])
         if closed:
-            return point in self.points or ccw01*ccw12*ccw20 == 0 or ccw01 == ccw12 == ccw20
+            return not(neg and pos)
         return ccw01 == ccw12 == ccw20
 
     @classmethod
@@ -116,7 +117,7 @@ class Triangle(Polygon):
         d = height/(3**(1/2))
         a = Point(lowerLeft.x-d, lowerLeft.y-0.5)
         b = Point(upperRight.x+d, lowerLeft.y-0.5)
-        c = Point(lowerLeft.x+width/2, lowerLeft.y+height+2*d)
+        c = Point(lowerLeft.x+width/2, lowerLeft.y+2*height+2*d)
         return cls([a, b, c])
 
 
@@ -154,7 +155,6 @@ def loadPlanarSubdivision(file):
             else:
                 polygon = Polygon(selectedPoints)
                 triangles.append(polygon.fixOrient())
-            # triangles.append(Triangle([a, b, c]))
             line = f.readline()
-    originalPolygon = Polygon(points)
-    return originalPolygon, triangles
+    originalPolygon = triangles[0].fixOrient()
+    return originalPolygon, triangles[1:]
