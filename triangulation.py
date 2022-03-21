@@ -6,7 +6,6 @@ from geometry import Polygon, Triangle, distance
 def _bridgeHole(polygon, hole):
     possibleBridges = list(product(polygon.points, hole.points))
     possibleBridges.sort(key=lambda b: distance(*b))
-    bridge = None
     bridge = possibleBridges[0]
     polygonPoint = bridge[0]
     holePoint = bridge[1]
@@ -20,11 +19,10 @@ def _bridgeHole(polygon, hole):
 
 
 def triangulate(polygon, hole=None):
-    if hole:
+    if hole is not None:
         polygon = _bridgeHole(polygon, hole)
     points = np.array(polygon.points)
     n = polygon.size
-    curr_n = n
     ears = {v[1]: v for v in polygon.getEars()}
     triangles = []
     adjacencyDict = {i: ((i-1) % n, (i+1) % n) for i in range(n)}
@@ -44,6 +42,5 @@ def triangulate(polygon, hole=None):
             ears[c] = list(ear_c)
         else:
             ears.pop(c, None)
-        curr_n -= 1
 
     return triangles
